@@ -9,6 +9,10 @@ public class PlayerMovement : MonoBehaviour
     private float jumpingPower = 16f;
     private bool isFacingRight = true;
 
+    private float crouchSpeed = 0.5f;
+    private bool isCrouching = false;
+
+
     private float coyoteTime = 0.2f;
     private float coyoteTimeCounter;
 
@@ -85,13 +89,14 @@ public class PlayerMovement : MonoBehaviour
             coyoteTimeCounter = 0f;
         }
 
-        if (Input.GetButtonDown("Roll") && canRoll)
+        if (Input.GetButtonDown("Roll") && canRoll && IsGrounded())
         {
             StartCoroutine(Roll());
         }
 
         WallSlide();
         WallJump();
+        IsCrouching();
 
         if (!isWallJumping)
         {
@@ -107,17 +112,30 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        rb.velocity = new Vector2 (horizontal * speed, rb.velocity.y);
-
-        if (!isWallJumping)
+        if (!isWallJumping && !isCrouching)
         {
             rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
         }
+
     }
 
     private bool IsGrounded()
     {
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+    }
+
+    private void IsCrouching() 
+    {
+        if (Input.GetButtonDown("Crouch") && IsGrounded())
+        {
+            isCrouching = true;
+            rb.velocity = new Vector2(horizontal * speed * crouchSpeed, rb.velocity.y);
+        }
+        else if (Input.GetButtonUp("Crouch") && IsGrounded())
+        {
+            isCrouching = false;
+            rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+        }
     }
 
     private bool IsWalled()
