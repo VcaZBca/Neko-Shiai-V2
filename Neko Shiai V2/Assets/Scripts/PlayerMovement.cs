@@ -9,8 +9,11 @@ public class PlayerMovement : MonoBehaviour
     private float jumpingPower = 16f;
     private bool isFacingRight = true;
 
+
     private float crouchSpeed = 0.5f;
     private bool isCrouching = false;
+    private float ceilingCheckRadius = 0.2f;
+    [SerializeField] Collider2D standingCollider;
 
 
     private float coyoteTime = 0.2f;
@@ -39,6 +42,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private Transform groundCheck;
     [SerializeField] private LayerMask groundLayer;
+    [SerializeField] private Transform ceilingCheck;
 
     [SerializeField] private TrailRenderer tr;
 
@@ -54,6 +58,9 @@ public class PlayerMovement : MonoBehaviour
         {
             return;
         }
+
+        bool isHeadHitting = CeilingCheck();
+
 
         if (IsGrounded())
         {
@@ -126,16 +133,30 @@ public class PlayerMovement : MonoBehaviour
 
     private void IsCrouching() 
     {
-        if (Input.GetButtonDown("Crouch") && IsGrounded())
+        if ((Input.GetButtonDown("Crouch") || CeilingCheck()) && IsGrounded())
         {
             isCrouching = true;
+            standingCollider.enabled = false;
             rb.velocity = new Vector2(horizontal * speed * crouchSpeed, rb.velocity.y);
         }
-        else if (Input.GetButtonUp("Crouch") && IsGrounded())
+        else if ((CeilingCheck() || Input.GetButtonUp("Crouch")) && IsGrounded())
         {
             isCrouching = false;
+            standingCollider.enabled = true;
+            //rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+        }
+        else
+        {
             rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
         }
+    }
+
+    private bool CeilingCheck()
+    {
+        //bool hit = Physics2D.CapsuleCast(ceilingCheck.position, ceilingCheckRadius, up, 0f, groundLayer);
+        //bool hit = Physics2D.Raycast(ceilingCheck.position, Vector2.up, ceilingCheckHeight, groundLayer);
+        //return hit;ž
+        return Physics2D.OverlapCircle(ceilingCheck.position, 0.2f, groundLayer);
     }
 
     private bool IsWalled()
