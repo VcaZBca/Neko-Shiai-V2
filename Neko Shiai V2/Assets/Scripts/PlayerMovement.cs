@@ -4,12 +4,15 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
+    private SpriteRenderer sprite;
+    private Animator anim;
+
     private float horizontal;
     private float speed = 8f;
     private float jumpingPower = 16f;
     private bool isFacingRight = true;
 
-
+    private bool crouch = false;
     private float crouchSpeed = 0.5f;
     private bool isCrouching = false;
     private float ceilingCheckRadius = 0.2f;
@@ -49,6 +52,8 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform wallCheck;
     [SerializeField] private LayerMask wallLayer;
 
+    private enum MovementState { idle, running, jumping, falling, crouching, climbing, roll, hurt }
+
 
 
     // Update is called once per frame
@@ -58,9 +63,6 @@ public class PlayerMovement : MonoBehaviour
         {
             return;
         }
-
-        bool isHeadHitting = CeilingCheck();
-
 
         if (IsGrounded())
         {
@@ -82,14 +84,14 @@ public class PlayerMovement : MonoBehaviour
 
         horizontal = Input.GetAxisRaw("Horizontal");
 
-        if (coyoteTimeCounter > 0f && jumpBufferCounter > 0f)
+        if (coyoteTimeCounter > 0f && jumpBufferCounter > 0f && (isCrouching == false))
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
 
             jumpBufferCounter = 0f;
         }
 
-        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f)
+        if (Input.GetButtonUp("Jump") && rb.velocity.y > 0f && (isCrouching == false))
         {
             rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
 
@@ -101,28 +103,58 @@ public class PlayerMovement : MonoBehaviour
             StartCoroutine(Roll());
         }
 
+        if (IsGrounded() && CeilingCheck() || (Input.GetAxis("Crouch") != 0f))
+        {
+            isCrouching = true;
+        }
+        else
+        {
+            isCrouching = false;
+        }
+
+        if (isCrouching == true)
+        {
+            Debug.Log($"rb.velocity: {rb.velocity}");
+            standingCollider.enabled = false;
+            rb.velocity = new Vector2(horizontal * speed * crouchSpeed, rb.velocity.y);
+            Debug.Log($"rb.velocity: {rb.velocity}");
+        }
+        else if (isCrouching == false)
+        {
+            standingCollider.enabled = true;
+            rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
+        }
+
+
+
         WallSlide();
         WallJump();
-        IsCrouching();
+
 
         if (!isWallJumping)
         {
             Flip();
         }
 
+        UpdateAnimationState();
     }
 
     private void FixedUpdate()
     {
+        anim = GetComponent<Animator>();
+        sprite = GetComponent<SpriteRenderer>();
+
         if (isRolling)
         {
             return;
         }
 
-        if (!isWallJumping && !isCrouching)
+        if (!isWallJumping && (isCrouching == false))
         {
             rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
         }
+
+
 
     }
 
@@ -131,31 +163,8 @@ public class PlayerMovement : MonoBehaviour
         return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
     }
 
-    private void IsCrouching() 
-    {
-        if ((Input.GetButtonDown("Crouch") || CeilingCheck()) && IsGrounded())
-        {
-            isCrouching = true;
-            standingCollider.enabled = false;
-            rb.velocity = new Vector2(horizontal * speed * crouchSpeed, rb.velocity.y);
-        }
-        else if ((CeilingCheck() || Input.GetButtonUp("Crouch")) && IsGrounded())
-        {
-            isCrouching = false;
-            standingCollider.enabled = true;
-            //rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
-        }
-        else
-        {
-            rb.velocity = new Vector2(horizontal * speed, rb.velocity.y);
-        }
-    }
-
     private bool CeilingCheck()
     {
-        //bool hit = Physics2D.CapsuleCast(ceilingCheck.position, ceilingCheckRadius, up, 0f, groundLayer);
-        //bool hit = Physics2D.Raycast(ceilingCheck.position, Vector2.up, ceilingCheckHeight, groundLayer);
-        //return hit;ž
         return Physics2D.OverlapCircle(ceilingCheck.position, 0.2f, groundLayer);
     }
 
@@ -238,4 +247,22 @@ public class PlayerMovement : MonoBehaviour
         yield return new WaitForSeconds(rollingCooldown);
         canRoll = true;
     }
+
+    private void UpdateAnimationState()
+    {
+        MovementState state = 0;
+
+        if (rb.velocity.x == 0f)
+        {
+            state = MovementState.idle;
+        }
+
+        if (isCrouching == true)
+        {
+            state = MovementState.crouching;
+        }
+
+        anim.SetInteger("state", (int)state);
+    }
+
 }
