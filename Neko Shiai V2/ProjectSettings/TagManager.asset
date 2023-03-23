@@ -5,16 +5,17 @@ TagManager:
   serializedVersion: 2
   tags:
   - Ladder
+  - OneWayPlatform
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Character
   - Water
   - UI
   - Ground
   - Wall
-  - 
+  - Ladder
   - 
   - 
   - 
@@ -41,4 +42,16 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Background
+    uniqueID: 3822680265
+    locked: 0
+  - name: Ladder
+    uniqueID: 2211562107
+    locked: 0
+  - name: Ground
+    uniqueID: 116510899
+    locked: 0
+  - name: Character
+    uniqueID: 965618875
     locked: 0

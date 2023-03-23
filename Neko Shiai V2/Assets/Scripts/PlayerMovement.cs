@@ -24,6 +24,9 @@ public class PlayerMovement : MonoBehaviour
 
     private float jumpBufferTime = 0.2f;
     private float jumpBufferCounter;
+    private bool isJumping = false;
+
+    private bool doubleJump;
 
     private bool canRoll = true;
     private bool isRolling;
@@ -52,7 +55,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private Transform wallCheck;
     [SerializeField] private LayerMask wallLayer;
 
-    private enum MovementState { idle, running, jumping, falling, crouching, climbing, roll, hurt }
+    private enum MovementState { idle, running, jumping, falling, crouching, climbing, wallSlide, wallJump, roll, hurt }
 
 
 
@@ -69,13 +72,14 @@ public class PlayerMovement : MonoBehaviour
             coyoteTimeCounter = coyoteTime;
         }
         else
-        { 
-        coyoteTimeCounter -= Time.deltaTime;
+        {
+            coyoteTimeCounter -= Time.deltaTime;
         }
 
         if (Input.GetButtonDown("Jump"))
         {
             jumpBufferCounter = jumpBufferTime;
+            isJumping = true;
         }
         else
         {
@@ -103,7 +107,7 @@ public class PlayerMovement : MonoBehaviour
             StartCoroutine(Roll());
         }
 
-        if (IsGrounded() && CeilingCheck() || (Input.GetAxis("Crouch") != 0f))
+        if (CeilingCheck() || (Input.GetAxis("Crouch") != 0f))
         {
             isCrouching = true;
         }
@@ -114,10 +118,8 @@ public class PlayerMovement : MonoBehaviour
 
         if (isCrouching == true)
         {
-            Debug.Log($"rb.velocity: {rb.velocity}");
             standingCollider.enabled = false;
             rb.velocity = new Vector2(horizontal * speed * crouchSpeed, rb.velocity.y);
-            Debug.Log($"rb.velocity: {rb.velocity}");
         }
         else if (isCrouching == false)
         {
@@ -134,6 +136,11 @@ public class PlayerMovement : MonoBehaviour
         if (!isWallJumping)
         {
             Flip();
+        }
+
+        if (isWallJumping == true)
+        {
+            isWallSliding = false;
         }
 
         UpdateAnimationState();
@@ -175,7 +182,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void WallSlide()
     {
-        if (IsWalled() && !IsGrounded() && horizontal != 0f) 
+        if (IsWalled() && !IsGrounded() && horizontal != 0f && !isWallJumping)
         {
             isWallSliding = true;
             rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlidingSpeed, float.MaxValue));
@@ -207,13 +214,13 @@ public class PlayerMovement : MonoBehaviour
             rb.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
             wallJumpingCounter = 0f;
 
-            if (transform.lossyScale.x != wallJumpingDirection)
+            /*if (transform.lossyScale.x != wallJumpingDirection)
             {
                 isFacingRight = !isFacingRight;
                 Vector3 localScale = transform.localScale;
                 localScale.x *= -1f;
                 transform.localScale = localScale;
-            }
+            }*/
 
             Invoke(nameof(StopWallJumping), wallJumpingDuration);
         }
@@ -261,6 +268,40 @@ public class PlayerMovement : MonoBehaviour
         {
             state = MovementState.crouching;
         }
+
+        if (horizontal != 0f && !isWallJumping && !isCrouching)
+        {
+            state = MovementState.running;
+        }
+        
+        if (rb.velocity.y > 0.1f)
+        {
+            state = MovementState.jumping;
+        }
+
+        if (rb.velocity.y < -0.1f)
+        {
+            state = MovementState.falling;
+        }
+
+        if (isWallSliding == true)
+        {
+            state = MovementState.wallSlide;
+        }
+
+        if (isWallJumping == true)
+        {
+            if (IsWalled())
+            {
+                state = MovementState.wallJump;
+            }
+            else if (!IsWalled())
+            {
+                isWallJumping = false;
+                state = MovementState.jumping;
+            }
+        }
+
 
         anim.SetInteger("state", (int)state);
     }
