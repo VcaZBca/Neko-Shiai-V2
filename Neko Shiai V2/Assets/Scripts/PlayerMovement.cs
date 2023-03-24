@@ -67,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
             return;
         }
 
-        if (IsGrounded())
+        if (IsGrounded() || doubleJump)
         {
             coyoteTimeCounter = coyoteTime;
         }
@@ -88,9 +88,16 @@ public class PlayerMovement : MonoBehaviour
 
         horizontal = Input.GetAxisRaw("Horizontal");
 
+        if (IsGrounded() && !Input.GetButton("Jump"))
+        {
+            doubleJump = false;
+        }
+
         if (coyoteTimeCounter > 0f && jumpBufferCounter > 0f && (isCrouching == false))
         {
             rb.velocity = new Vector2(rb.velocity.x, jumpingPower);
+
+            doubleJump = !doubleJump;
 
             jumpBufferCounter = 0f;
         }

@@ -16,9 +16,9 @@ TagManager:
   - Ground
   - Wall
   - Ladder
-  - 
-  - 
-  - 
+  - Background 1
+  - Background 2
+  - Background 3
   - 
   - 
   - 
@@ -43,7 +43,13 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
-  - name: Background
+  - name: Background 3
+    uniqueID: 3330180517
+    locked: 0
+  - name: Background 2
+    uniqueID: 354434735
+    locked: 0
+  - name: Background 1
     uniqueID: 3822680265
     locked: 0
   - name: Ladder
